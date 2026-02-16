@@ -8,22 +8,10 @@ const state = {
 const mapStage = document.getElementById("mapStage");
 const mapViewport = document.getElementById("mapViewport");
 const answerTemplate = document.getElementById("answerTemplate");
-const breadcrumb = document.getElementById("breadcrumb");
-const backBtn = document.getElementById("backBtn");
 const answerModal = document.getElementById("answerModal");
 const modalBackdrop = document.getElementById("modalBackdrop");
 const closeModalBtn = document.getElementById("closeModalBtn");
 const modalContent = document.getElementById("modalContent");
-
-backBtn.addEventListener("click", () => {
-  if (state.selectedAnswerTag) {
-    closeModal();
-    return;
-  }
-
-  state.selectedCategory = null;
-  render();
-});
 
 modalBackdrop.addEventListener("click", () => closeModal());
 closeModalBtn.addEventListener("click", () => closeModal());
@@ -160,20 +148,13 @@ function render() {
   const viewportWidth = mapViewport.clientWidth;
   const viewportHeight = mapViewport.clientHeight;
   const center = { x: viewportWidth / 2, y: viewportHeight / 2 };
+  const displayedNodes = [];
 
   mapStage.innerHTML = "";
 
-  const rootNode = {
-    id: "root",
-    label: "Question Categories",
-    type: "root",
-    x: center.x,
-    y: center.y,
-    muted: Boolean(state.selectedCategory),
-  };
-
-  const categoryNodes = buildCategoryNodes(center, Math.min(viewportWidth, viewportHeight) * 0.32);
-  const selectedCategoryNode = categoryNodes.find((node) => node.id === state.selectedCategory) || null;
+  const selectedCategoryId = state.selectedCategory;
+  const categoryNodes = buildCategoryNodes(center, viewportWidth, viewportHeight);
+  const selectedCategoryNode = categoryNodes.find((node) => node.id === selectedCategoryId) || null;
 
   let situationNodes = [];
   if (selectedCategoryNode) {
@@ -183,60 +164,122 @@ function render() {
     situationNodes = buildSituationNodes(
       selectedCategoryNode,
       answersForCategory,
-      Math.min(viewportWidth, viewportHeight) * 0.24
+      viewportWidth,
+      viewportHeight
     );
   }
 
-  const focused = Boolean(selectedCategoryNode);
+  if (!selectedCategoryNode) {
+    const rootNode = {
+      id: "root",
+      label: "Question Categories",
+      type: "root",
+      x: center.x,
+      y: center.y,
+    };
 
-  if (focused) {
-    drawLinks(rootNode, categoryNodes, true);
-    drawLinks(rootNode, [selectedCategoryNode], false);
-    drawLinks(selectedCategoryNode, situationNodes, false);
-  } else {
     drawLinks(rootNode, categoryNodes, false);
+    drawNode(rootNode);
+    displayedNodes.push(rootNode);
+    for (const node of categoryNodes) {
+      drawNode(node);
+      displayedNodes.push(node);
+    }
+  } else {
+    drawNode(selectedCategoryNode);
+    displayedNodes.push(selectedCategoryNode);
+    drawLinks(selectedCategoryNode, situationNodes, false);
+    for (const node of situationNodes) {
+      drawNode(node);
+      displayedNodes.push(node);
+    }
   }
 
-  drawNode(rootNode);
-  for (const node of categoryNodes) {
-    node.muted = focused && node.id !== selectedCategoryNode.id;
-    drawNode(node);
-  }
-  for (const node of situationNodes) {
-    drawNode(node);
-  }
-
-  applyTransform(center, selectedCategoryNode);
-  updateNavigation();
+  applyTransform(center, selectedCategoryNode, displayedNodes, viewportWidth, viewportHeight);
 }
 
-function buildCategoryNodes(center, radius) {
-  const total = state.categories.length || 1;
-  return state.categories.map((category, index) => {
-    const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
-    return {
+function buildCategoryNodes(center, viewportWidth, viewportHeight) {
+  const mobile = window.innerWidth < 900;
+  const minRadius = Math.max(130, Math.min(viewportWidth, viewportHeight) * 0.24);
+  return layoutNodesInRings({
+    items: state.categories,
+    center,
+    minRadius,
+    ringStep: mobile ? 104 : 98,
+    minSpacing: mobile ? 152 : 176,
+    xStretch: mobile ? 0.74 : 1,
+    yStretch: mobile ? 1.28 : 1,
+    mapItem: (category) => ({
       id: category,
       label: categoryLabel(category),
       type: "category",
-      x: center.x + radius * Math.cos(angle),
-      y: center.y + radius * Math.sin(angle),
-    };
+    }),
   });
 }
 
-function buildSituationNodes(categoryNode, answers, radius) {
-  const total = answers.length || 1;
-  return answers.map((answer, index) => {
-    const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
-    return {
+function buildSituationNodes(categoryNode, answers, viewportWidth, viewportHeight) {
+  const mobile = window.innerWidth < 900;
+  const minRadius = Math.max(170, Math.min(viewportWidth, viewportHeight) * 0.28);
+  return layoutNodesInRings({
+    items: answers,
+    center: { x: categoryNode.x, y: categoryNode.y },
+    minRadius,
+    ringStep: mobile ? 118 : 112,
+    minSpacing: mobile ? 172 : 212,
+    xStretch: mobile ? 0.7 : 1,
+    yStretch: mobile ? 1.22 : 1,
+    mapItem: (answer) => ({
       id: answer.tag,
       label: answer.title,
       type: "situation",
-      x: categoryNode.x + radius * Math.cos(angle),
-      y: categoryNode.y + radius * Math.sin(angle),
       answer,
-    };
+    }),
   });
+}
+
+function layoutNodesInRings({
+  items,
+  center,
+  minRadius,
+  ringStep,
+  minSpacing,
+  xStretch,
+  yStretch,
+  mapItem,
+}) {
+  if (!items.length) return [];
+
+  const rings = [];
+  let remaining = items.length;
+  let radius = minRadius;
+
+  while (remaining > 0) {
+    const effectivePerimeter = 2 * Math.PI * radius * ((xStretch + yStretch) / 2);
+    const capacity = Math.max(4, Math.floor(effectivePerimeter / minSpacing));
+    const count = Math.min(capacity, remaining);
+    rings.push({ radius, count });
+    remaining -= count;
+    radius += ringStep;
+  }
+
+  const nodes = [];
+  let cursor = 0;
+  for (let ringIndex = 0; ringIndex < rings.length; ringIndex += 1) {
+    const ring = rings[ringIndex];
+    for (let i = 0; i < ring.count; i += 1) {
+      const angle = (Math.PI * 2 * i) / ring.count - Math.PI / 2 + ringIndex * 0.22;
+      const item = items[cursor];
+      const base = mapItem(item);
+      nodes.push({
+        ...base,
+        x: center.x + ring.radius * xStretch * Math.cos(angle),
+        y: center.y + ring.radius * yStretch * Math.sin(angle),
+      });
+      cursor += 1;
+    }
+  }
+
+  return nodes;
 }
 
 function drawLinks(fromNode, toNodes, muted) {
@@ -272,10 +315,6 @@ function drawNode(node) {
     button.classList.add("is-active");
   }
 
-  if (node.muted) {
-    button.classList.add("is-muted");
-  }
-
   if (node.type === "root") {
     button.addEventListener("click", () => {
       state.selectedCategory = null;
@@ -297,7 +336,6 @@ function drawNode(node) {
     button.addEventListener("click", () => {
       state.selectedAnswerTag = node.id;
       openModal(node.answer);
-      updateNavigation();
       render();
     });
   }
@@ -305,30 +343,65 @@ function drawNode(node) {
   mapStage.appendChild(button);
 }
 
-function applyTransform(center, selectedCategoryNode) {
-  if (!selectedCategoryNode) {
+function applyTransform(center, selectedCategoryNode, displayedNodes, viewportWidth, viewportHeight) {
+  if (!displayedNodes.length) {
     mapStage.style.transform = "translate(0px, 0px) scale(1)";
     return;
   }
 
-  const scale = window.innerWidth < 900 ? 1.16 : 1.28;
-  const x = center.x - selectedCategoryNode.x;
-  const y = center.y - selectedCategoryNode.y;
+  const bounds = getNodeBounds(displayedNodes);
+  const padding = window.innerWidth < 900 ? 14 : 24;
+  const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
+  const contentHeight = Math.max(1, bounds.maxY - bounds.minY);
+  const fitScale = Math.min(
+    1,
+    (viewportWidth - padding * 2) / contentWidth,
+    (viewportHeight - padding * 2) / contentHeight
+  );
+
+  const targetScale = selectedCategoryNode ? (window.innerWidth < 900 ? 1.02 : 1.06) : 1;
+  const scale = Math.min(targetScale, fitScale);
+
+  const contentCenterX = (bounds.minX + bounds.maxX) / 2;
+  const contentCenterY = (bounds.minY + bounds.maxY) / 2;
+  const x = center.x - contentCenterX * scale;
+  const y = center.y - contentCenterY * scale;
+
   mapStage.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
 }
 
-function updateNavigation() {
-  if (!state.selectedCategory) {
-    breadcrumb.textContent = "Home";
-    backBtn.classList.add("hidden");
-    return;
+function getNodeBounds(nodes) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const node of nodes) {
+    const size = estimateNodeSize(node.type);
+    const left = node.x - size.width / 2;
+    const right = node.x + size.width / 2;
+    const top = node.y - size.height / 2;
+    const bottom = node.y + size.height / 2;
+
+    if (left < minX) minX = left;
+    if (top < minY) minY = top;
+    if (right > maxX) maxX = right;
+    if (bottom > maxY) maxY = bottom;
   }
 
-  const category = categoryLabel(state.selectedCategory);
-  const answer = state.answers.find((item) => item.tag === state.selectedAnswerTag) || null;
-  breadcrumb.textContent = answer ? `Home / ${category} / ${answer.title}` : `Home / ${category}`;
-  backBtn.classList.remove("hidden");
-  backBtn.textContent = state.selectedAnswerTag ? "Back To Category" : "Back To Home";
+  return { minX, minY, maxX, maxY };
+}
+
+function estimateNodeSize(type) {
+  const mobile = window.innerWidth < 900;
+
+  if (type === "situation") {
+    return mobile ? { width: 132, height: 76 } : { width: 168, height: 88 };
+  }
+  if (type === "root") {
+    return mobile ? { width: 136, height: 64 } : { width: 176, height: 74 };
+  }
+  return mobile ? { width: 132, height: 76 } : { width: 168, height: 88 };
 }
 
 function openModal(answer) {
@@ -350,7 +423,6 @@ function closeModal() {
   state.selectedAnswerTag = null;
   answerModal.classList.add("hidden");
   modalContent.innerHTML = "";
-  updateNavigation();
 }
 
 function showError(message) {
