@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interview Mindmap</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Interview Mindmap</h1>
+        <p>Drill into categories, then select a career situation for STAR details.</p>
+      </div>
+      <div class="controls">
+        <p id="breadcrumb" class="breadcrumb">Home</p>
+        <button id="backBtn" type="button" class="hidden">Back</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="map-shell" aria-label="Mindmap view">
+        <div id="mapViewport" class="map-viewport">
+          <div id="mapStage" class="map-stage" role="tree"></div>
+        </div>
+      </section>
+    </main>
+
+    <div id="answerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div id="modalBackdrop" class="modal-backdrop"></div>
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h2 id="modalTitle">Situation Details</h2>
+          <button id="closeModalBtn" type="button" aria-label="Close details">Close</button>
+        </div>
+        <div id="modalContent" class="modal-content"></div>
+      </div>
+    </div>
+
+    <template id="answerTemplate">
+      <article class="answer-card">
+        <h2 data-role="title"></h2>
+        <p class="meta">
+          <span data-role="tag"></span>
+          <span data-role="categories"></span>
+        </p>
+        <section>
+          <h3>Situation</h3>
+          <p data-role="situation"></p>
+        </section>
+        <section>
+          <h3>Task</h3>
+          <p data-role="task"></p>
+        </section>
+        <section>
+          <h3>Action</h3>
+          <p data-role="action"></p>
+        </section>
+        <section>
+          <h3>Result</h3>
+          <p data-role="result"></p>
+        </section>
+      </article>
+    </template>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
