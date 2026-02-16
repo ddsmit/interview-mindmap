@@ -1,8 +1,8 @@
 ---
 question_categories:
-  - enterprise strategy
-  - governance
-  - executive influence
+  - strategic-execution
+  - risk-and-compliance
+  - cross-functional-leadership
 situation_tag: qrl-enterprise-readiness
 ---
 # Establishing an Enterprise Quality Readiness Framework (QRL)

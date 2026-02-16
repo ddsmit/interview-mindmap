@@ -1,8 +1,8 @@
 ---
 question_categories:
-  - strategic planning
-  - portfolio management
-  - risk management
+  - strategic-execution
+  - data-driven-decision-making
+  - risk-and-compliance
 situation_tag: quality-capacity-planning-npi
 ---
 # Implementing Strategic Quality Capacity Planning

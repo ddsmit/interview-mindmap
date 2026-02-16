@@ -1,6 +1,8 @@
 ---
 question_categories:
-  - cross-functional leadership
+  - cross-functional-leadership
+  - risk-and-compliance
+  - strategic-execution
 situation_tag: executive-order
 ---
 

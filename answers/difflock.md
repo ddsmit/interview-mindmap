@@ -1,8 +1,8 @@
 ---
 question_categories:
-  - operational excellence
-  - problem solving
-  - accountability
+  - operational-excellence
+  - data-driven-decision-making
+  - cross-functional-leadership
 situation_tag: first-pass-yield-six-sigma
 ---
 # Eliminating a Long-Standing First Pass Yield Issue

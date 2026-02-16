@@ -1,8 +1,8 @@
 ---
 question_categories:
-  - cross-functional leadership
-  - change leadership
-  - process transformation
+  - cross-functional-leadership
+  - strategic-execution
+  - risk-and-compliance
 situation_tag: fmea-ownership-npi
 ---
 

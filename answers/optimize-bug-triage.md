@@ -1,8 +1,8 @@
 ---
 question_categories:
-  - customer experience
-  - digital transformation
-  - executive influence
+  - customer-impact
+  - operational-excellence
+  - data-driven-decision-making
 situation_tag: bug-triage-optimization
 ---
 # Optimizing Bug Triage to Improve Customer Experience

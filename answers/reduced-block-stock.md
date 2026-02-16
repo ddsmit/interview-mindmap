@@ -1,8 +1,8 @@
 ---
 question_categories:
-  - supplier leadership
-  - cost management
-  - cross-functional collaboration
+  - cross-functional-leadership
+  - operational-excellence
+  - data-driven-decision-making
 situation_tag: supplier-blocked-inventory-reduction
 ---
 # Reducing Blocked Inventory Through Supplier Alignment
