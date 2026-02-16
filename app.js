@@ -177,6 +177,7 @@ function render() {
       x: center.x,
       y: center.y,
     };
+    resolveNodeOverlaps([rootNode, ...categoryNodes], new Set(["root"]));
 
     drawLinks(rootNode, categoryNodes, false);
     drawNode(rootNode);
@@ -186,6 +187,8 @@ function render() {
       displayedNodes.push(node);
     }
   } else {
+    resolveNodeOverlaps([selectedCategoryNode, ...situationNodes], new Set([selectedCategoryNode.id]));
+
     drawNode(selectedCategoryNode);
     displayedNodes.push(selectedCategoryNode);
     drawLinks(selectedCategoryNode, situationNodes, false);
@@ -280,6 +283,64 @@ function layoutNodesInRings({
   }
 
   return nodes;
+}
+
+function resolveNodeOverlaps(nodes, fixedIds) {
+  if (nodes.length < 2) return;
+
+  const gap = window.innerWidth < 900 ? 12 : 16;
+  const maxIterations = 220;
+
+  for (let iteration = 0; iteration < maxIterations; iteration += 1) {
+    let movedAny = false;
+
+    for (let i = 0; i < nodes.length; i += 1) {
+      for (let j = i + 1; j < nodes.length; j += 1) {
+        const a = nodes[i];
+        const b = nodes[j];
+        const aSize = estimateNodeSize(a.type);
+        const bSize = estimateNodeSize(b.type);
+
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const overlapX = (aSize.width + bSize.width) / 2 + gap - Math.abs(dx);
+        const overlapY = (aSize.height + bSize.height) / 2 + gap - Math.abs(dy);
+
+        if (overlapX <= 0 || overlapY <= 0) continue;
+
+        movedAny = true;
+        const moveOnX = overlapX < overlapY;
+        const shift = (moveOnX ? overlapX : overlapY) + 0.5;
+        const sign = (moveOnX ? dx : dy) >= 0 ? 1 : -1;
+        const aFixed = fixedIds.has(a.id);
+        const bFixed = fixedIds.has(b.id);
+
+        if (!aFixed && !bFixed) {
+          if (moveOnX) {
+            a.x -= (shift / 2) * sign;
+            b.x += (shift / 2) * sign;
+          } else {
+            a.y -= (shift / 2) * sign;
+            b.y += (shift / 2) * sign;
+          }
+          continue;
+        }
+
+        if (aFixed && !bFixed) {
+          if (moveOnX) b.x += shift * sign;
+          else b.y += shift * sign;
+          continue;
+        }
+
+        if (!aFixed && bFixed) {
+          if (moveOnX) a.x -= shift * sign;
+          else a.y -= shift * sign;
+        }
+      }
+    }
+
+    if (!movedAny) break;
+  }
 }
 
 function drawLinks(fromNode, toNodes, muted) {
