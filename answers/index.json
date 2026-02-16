@@ -1,6 +1,11 @@
 {
   "files": [
     "cross-functional-fmea-ownership.md",
-    "regulatory-pressure.md"
+    "difflock.md",
+    "optimize-bug-triage.md",
+    "qrl.md",
+    "reduced-block-stock.md",
+    "regulatory-pressure.md",
+    "resource-planning.md"
   ]
 }
