@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+"$repo_root/scripts/update-answers-index.sh"
+
+if ! git diff --quiet -- "$repo_root/answers/index.json"; then
+  git add "$repo_root/answers/index.json"
+  echo "Updated and staged answers/index.json"
+fi
